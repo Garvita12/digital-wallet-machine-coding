@@ -5,7 +5,6 @@ import com.fkwallet.service.OfferService;
 
 import java.util.Comparator;
 import java.util.List;
-import java.util.stream.Collectors;
 
 public class OfferServiceImpl implements OfferService {
 
@@ -17,12 +16,12 @@ public class OfferServiceImpl implements OfferService {
 
     @Override
     public void maybeTriggerOffer1(String from, String to) {
-        Wallet wf = walletService.getWallet(from);
-        Wallet wt = walletService.getWallet(to);
-        if (wf == null || wt == null) return;
-        if (wf.getBalance().compareTo(wt.getBalance()) == 0) {
-            walletService.creditReward(from, WalletServiceImpl.OFFER1_REWARD, "Offer1 reward");
-            walletService.creditReward(to, WalletServiceImpl.OFFER1_REWARD, "Offer1 reward");
+        var w1 = walletService.getWallet(from);
+        var w2 = walletService.getWallet(to);
+
+        if (w1.getBalance().compareTo(w2.getBalance()) == 0) {
+            walletService.creditReward(from, WalletServiceImpl.OFFER1_REWARD, "Offer1");
+            walletService.creditReward(to, WalletServiceImpl.OFFER1_REWARD, "Offer1");
         }
     }
 
@@ -30,16 +29,29 @@ public class OfferServiceImpl implements OfferService {
     public void triggerOffer2() {
         List<Wallet> list = walletService.snapshotWallets();
 
-        List<Wallet> sorted = list.stream()
-                .sorted(
-                        Comparator.comparingInt(Wallet::getTransactionCount).reversed()
-                                .thenComparing(Wallet::getBalance, Comparator.reverseOrder())
-                                .thenComparing(Wallet::getCreationOrder)
-                )
-                .collect(Collectors.toList());
+        list.sort(Comparator
+                .comparing(Wallet::getTransactionCount).reversed()
+                .thenComparing(Wallet::getBalance).reversed()
+                .thenComparing(Wallet::getCreationOrder)  // earlier created first
+        );
 
-        if (sorted.size() >= 1) walletService.creditReward(sorted.get(0).getOwner(), WalletServiceImpl.OFFER2_FIRST, "Offer2 reward 1");
-        if (sorted.size() >= 2) walletService.creditReward(sorted.get(1).getOwner(), WalletServiceImpl.OFFER2_SECOND, "Offer2 reward 2");
-        if (sorted.size() >= 3) walletService.creditReward(sorted.get(2).getOwner(), WalletServiceImpl.OFFER2_THIRD, "Offer2 reward 3");
+        if (list.size() >= 1) {
+            var w = list.get(0);
+            walletService.creditReward(w.getOwner(),
+                    WalletServiceImpl.OFFER2_FIRST,
+                    "Offer2 First");
+        }
+        if (list.size() >= 2) {
+            var w = list.get(1);
+            walletService.creditReward(w.getOwner(),
+                    WalletServiceImpl.OFFER2_SECOND,
+                    "Offer2 Second");
+        }
+        if (list.size() >= 3) {
+            var w = list.get(2);
+            walletService.creditReward(w.getOwner(),
+                    WalletServiceImpl.OFFER2_THIRD,
+                    "Offer2 Third");
+        }
     }
 }
