@@ -30,11 +30,13 @@ public class OfferServiceImpl implements OfferService {
     public void triggerOffer2() {
         List<Wallet> list = walletService.snapshotWallets();
 
-        List<Wallet> sorted = list.stream().sorted(
-                Comparator.comparingInt(Wallet::getTransactionCount).reversed()
-                        .thenComparing((Wallet w) -> w.getBalance(), Comparator.reverseOrder())
-                        .thenComparingLong(Wallet::getCreationOrder)
-        ).collect(Collectors.toList());
+        List<Wallet> sorted = list.stream()
+                .sorted(
+                        Comparator.comparingInt(Wallet::getTransactionCount).reversed()
+                                .thenComparing(Wallet::getBalance, Comparator.reverseOrder())
+                                .thenComparing(Wallet::getCreationOrder)
+                )
+                .collect(Collectors.toList());
 
         if (sorted.size() >= 1) walletService.creditReward(sorted.get(0).getOwner(), WalletServiceImpl.OFFER2_FIRST, "Offer2 reward 1");
         if (sorted.size() >= 2) walletService.creditReward(sorted.get(1).getOwner(), WalletServiceImpl.OFFER2_SECOND, "Offer2 reward 2");
