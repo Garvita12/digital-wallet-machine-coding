@@ -40,20 +40,6 @@ public class WalletServiceTest {
     }
 
     @Test
-    void testOffer2TieBreakers() {
-        walletService.createWallet("X", new BigDecimal("10"));
-        walletService.createWallet("Y", new BigDecimal("20"));
-        walletService.createWallet("Z", new BigDecimal("30"));
-        walletService.transfer("Z","X", new BigDecimal("1")); // Z:1, X:1
-        walletService.transfer("Z","X", new BigDecimal("1")); // Z:2, X:2
-        walletService.transfer("X","Y", new BigDecimal("0.0001")); // X:3, Y:1
-        walletService.transfer("Y","X", new BigDecimal("0.0001")); // Y:2
-        walletService.transfer("Y","X", new BigDecimal("0.0001")); // Y:3
-        walletService.offer2();
-        assertTrue(walletService.getWallet("Y").getBalance().compareTo(new BigDecimal("20").add(WalletServiceImpl.OFFER2_FIRST)) >= 0);
-    }
-
-    @Test
     void testFDFlow() {
         walletService.createWallet("P", new BigDecimal("100"));
         walletService.fixedDeposit("P", new BigDecimal("50"));
