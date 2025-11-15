@@ -9,13 +9,13 @@ import com.fkwallet.service.WalletService;
 import java.math.BigDecimal;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicLong;
-import java.util.stream.Collectors;
 
 public class WalletServiceImpl implements WalletService {
 
     private final Map<String, Wallet> wallets = new LinkedHashMap<>();
-    private final OfferService offerService;
+    private OfferService offerService; // non-final to avoid circular wiring
     private final AtomicLong orderSeq = new AtomicLong(0);
+
     public static final BigDecimal MIN_UNIT = new BigDecimal("0.0001");
     public static final BigDecimal OFFER1_REWARD = new BigDecimal("10");
     public static final BigDecimal OFFER2_FIRST = new BigDecimal("10");
@@ -23,7 +23,9 @@ public class WalletServiceImpl implements WalletService {
     public static final BigDecimal OFFER2_THIRD = new BigDecimal("2");
     public static final BigDecimal FD_INTEREST = new BigDecimal("10");
 
-    public WalletServiceImpl(OfferService offerService) {
+    public WalletServiceImpl() {}
+
+    public void setOfferService(OfferService offerService) {
         this.offerService = offerService;
     }
 
@@ -52,7 +54,7 @@ public class WalletServiceImpl implements WalletService {
 
         updateFixedDepositsOnGlobalTx();
 
-        offerService.maybeTriggerOffer1(from, to);
+        if (offerService != null) offerService.maybeTriggerOffer1(from, to);
     }
 
     private void updateFixedDepositsOnGlobalTx() {
@@ -61,6 +63,7 @@ public class WalletServiceImpl implements WalletService {
             FixedDeposit fd = w.getFixedDeposit();
             if (fd == null) continue;
             if (w.getBalance().compareTo(fd.getFdAmount()) < 0) {
+                // dissolve
                 w.clearFixedDeposit();
             } else {
                 fd.decrement();
@@ -83,12 +86,15 @@ public class WalletServiceImpl implements WalletService {
               .append(t.getType() == TransactionType.DEBIT ? "debit" : "credit")
               .append(" ").append(t.getAmount().stripTrailingZeros().toPlainString()).append("\n");
         }
+        if (w.getFixedDeposit() != null) {
+            sb.append(String.format("FD %s remTx %d", w.getFixedDeposit().getFdAmount().stripTrailingZeros().toPlainString(),
+                    w.getFixedDeposit().getRemainingTxs()));
+        }
         return sb.toString().trim();
     }
 
     @Override
     public synchronized Map<String, String> overview() {
-      
         Map<String, String> out = new LinkedHashMap<>();
         for (var w : wallets.values()) {
             StringBuilder line = new StringBuilder();
@@ -104,7 +110,7 @@ public class WalletServiceImpl implements WalletService {
 
     @Override
     public synchronized void offer2() {
-        offerService.triggerOffer2();
+        if (offerService != null) offerService.triggerOffer2();
     }
 
     @Override
