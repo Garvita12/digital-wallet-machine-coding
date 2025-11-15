@@ -141,7 +141,6 @@ public class WalletServiceImpl implements WalletService {
 
         w.setFixedDeposit(new FixedDeposit(fdAmount));
 
-        // FIX: use addTransaction instead of unmodifiableList()
         w.addTransaction(new Transaction(TransactionType.FD_PARK, fdAmount, "FD parked"));
     }
 
