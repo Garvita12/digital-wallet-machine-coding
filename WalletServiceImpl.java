@@ -47,26 +47,20 @@ public class WalletServiceImpl implements WalletService {
 
         if (wf.getBalance().compareTo(amount) < 0) throw new IllegalArgumentException("Insufficient funds");
 
-        // Perform transfer
         wf.debit(amount, String.format("%s -> %s", from, to));
         wt.credit(amount, String.format("%s <- %s", to, from), TransactionType.CREDIT);
 
-        // After each transaction, update FD states (decrement counters if FD exists for any wallet)
         updateFixedDepositsOnGlobalTx();
 
-        // Offer1 check
         offerService.maybeTriggerOffer1(from, to);
     }
 
     private void updateFixedDepositsOnGlobalTx() {
-        // For each wallet that currently has FD, if its balance >= fdAmount then decrement remainingTx.
-        // If under fdAmount, dissolve.
         List<Wallet> list = new ArrayList<>(wallets.values());
         for (Wallet w : list) {
             FixedDeposit fd = w.getFixedDeposit();
             if (fd == null) continue;
             if (w.getBalance().compareTo(fd.getFdAmount()) < 0) {
-                // dissolve
                 w.clearFixedDeposit();
             } else {
                 fd.decrement();
@@ -94,7 +88,7 @@ public class WalletServiceImpl implements WalletService {
 
     @Override
     public synchronized Map<String, String> overview() {
-        // returns map owner -> line showing balance and FD info if any
+      
         Map<String, String> out = new LinkedHashMap<>();
         for (var w : wallets.values()) {
             StringBuilder line = new StringBuilder();
@@ -143,7 +137,6 @@ public class WalletServiceImpl implements WalletService {
         return wallets.get(owner);
     }
 
-    // utils used by OfferServiceImpl
     public synchronized List<Wallet> snapshotWallets() {
         return new ArrayList<>(wallets.values());
     }
