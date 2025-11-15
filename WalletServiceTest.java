@@ -16,10 +16,9 @@ public class WalletServiceTest {
 
     @BeforeEach
     void setup() {
-        walletService = new WalletServiceImpl(null);
+        walletService = new WalletServiceImpl();
         var offer = new OfferServiceImpl(walletService);
-        // swap to get offerService in walletService
-        walletService = new WalletServiceImpl(offer);
+        walletService.setOfferService(offer);
     }
 
     @Test
@@ -58,7 +57,7 @@ public class WalletServiceTest {
     void testFDFlow() {
         walletService.createWallet("P", new BigDecimal("100"));
         walletService.fixedDeposit("P", new BigDecimal("50"));
-        walletService.transfer("P","P", new BigDecimal("0.0001")); // allowed (self-transfer)
+        walletService.transfer("P","P", new BigDecimal("0.0001"));
         walletService.transfer("P","P", new BigDecimal("0.0001"));
         walletService.transfer("P","P", new BigDecimal("0.0001"));
         walletService.transfer("P","P", new BigDecimal("0.0001"));
