@@ -3,7 +3,6 @@ package com.fkwallet.service.impl;
 import com.fkwallet.model.Wallet;
 import com.fkwallet.service.OfferService;
 
-import java.math.BigDecimal;
 import java.util.Comparator;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -22,7 +21,6 @@ public class OfferServiceImpl implements OfferService {
         Wallet wt = walletService.getWallet(to);
         if (wf == null || wt == null) return;
         if (wf.getBalance().compareTo(wt.getBalance()) == 0) {
-          
             walletService.creditReward(from, WalletServiceImpl.OFFER1_REWARD, "Offer1 reward");
             walletService.creditReward(to, WalletServiceImpl.OFFER1_REWARD, "Offer1 reward");
         }
