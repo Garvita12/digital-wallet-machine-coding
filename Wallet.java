@@ -11,8 +11,8 @@ public class Wallet {
     private BigDecimal balance;
     private final Instant createdAt;
     private final List<Transaction> transactions = new ArrayList<>();
-    private FixedDeposit fixedDeposit; // nullable
-    private final long creationOrder; // for tie-breaker
+    private FixedDeposit fixedDeposit;
+    private final long creationOrder;
 
     public Wallet(String owner, BigDecimal initial, long creationOrder) {
         this.owner = owner;
