@@ -41,6 +41,9 @@ public class Wallet {
     public int getTransactionCount() {
         return transactions.size();
     }
+     public void addTransaction(Transaction transaction) {
+        this.transactions.add(transaction);
+    }
 
     public void setFixedDeposit(FixedDeposit fd) { this.fixedDeposit = fd; }
     public void clearFixedDeposit() { this.fixedDeposit = null; }
