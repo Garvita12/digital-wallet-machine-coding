@@ -1,6 +1,7 @@
 package com.fkwallet.service.impl;
 
 import com.fkwallet.model.FixedDeposit;
+import com.fkwallet.model.Transaction;
 import com.fkwallet.model.TransactionType;
 import com.fkwallet.model.Wallet;
 import com.fkwallet.service.OfferService;
@@ -13,7 +14,7 @@ import java.util.concurrent.atomic.AtomicLong;
 public class WalletServiceImpl implements WalletService {
 
     private final Map<String, Wallet> wallets = new LinkedHashMap<>();
-    private OfferService offerService; // non-final to avoid circular wiring
+    private OfferService offerService;
     private final AtomicLong orderSeq = new AtomicLong(0);
 
     public static final BigDecimal MIN_UNIT = new BigDecimal("0.0001");
@@ -44,6 +45,7 @@ public class WalletServiceImpl implements WalletService {
         requirePlayerExists(to);
         requirePositive(amount, "amount");
         if (amount.compareTo(MIN_UNIT) < 0) throw new IllegalArgumentException("Minimum transfer is " + MIN_UNIT);
+
         Wallet wf = wallets.get(from);
         Wallet wt = wallets.get(to);
 
@@ -62,13 +64,12 @@ public class WalletServiceImpl implements WalletService {
         for (Wallet w : list) {
             FixedDeposit fd = w.getFixedDeposit();
             if (fd == null) continue;
+
             if (w.getBalance().compareTo(fd.getFdAmount()) < 0) {
-                // dissolve
                 w.clearFixedDeposit();
             } else {
                 fd.decrement();
                 if (fd.isComplete()) {
-                    // give interest
                     w.credit(FD_INTEREST, "FD interest", TransactionType.FD_INTEREST);
                     w.clearFixedDeposit();
                 }
@@ -81,15 +82,23 @@ public class WalletServiceImpl implements WalletService {
         requirePlayerExists(owner);
         Wallet w = wallets.get(owner);
         StringBuilder sb = new StringBuilder();
+
         for (var t : w.getTransactions()) {
             sb.append(t.getNote()).append(" ")
               .append(t.getType() == TransactionType.DEBIT ? "debit" : "credit")
-              .append(" ").append(t.getAmount().stripTrailingZeros().toPlainString()).append("\n");
+              .append(" ")
+              .append(t.getAmount().stripTrailingZeros().toPlainString())
+              .append("\n");
         }
+
         if (w.getFixedDeposit() != null) {
-            sb.append(String.format("FD %s remTx %d", w.getFixedDeposit().getFdAmount().stripTrailingZeros().toPlainString(),
-                    w.getFixedDeposit().getRemainingTxs()));
+            sb.append(String.format(
+                    "FD %s remTx %d",
+                    w.getFixedDeposit().getFdAmount().stripTrailingZeros().toPlainString(),
+                    w.getFixedDeposit().getRemainingTxs()
+            ));
         }
+
         return sb.toString().trim();
     }
 
@@ -100,8 +109,10 @@ public class WalletServiceImpl implements WalletService {
             StringBuilder line = new StringBuilder();
             line.append(w.getBalance().stripTrailingZeros().toPlainString());
             if (w.getFixedDeposit() != null) {
-                line.append(" FD=").append(w.getFixedDeposit().getFdAmount().stripTrailingZeros().toPlainString())
-                        .append(" remTx=").append(w.getFixedDeposit().getRemainingTxs());
+                line.append(" FD=")
+                        .append(w.getFixedDeposit().getFdAmount().stripTrailingZeros().toPlainString())
+                        .append(" remTx=")
+                        .append(w.getFixedDeposit().getRemainingTxs());
             }
             out.put(w.getOwner(), line.toString());
         }
@@ -116,26 +127,37 @@ public class WalletServiceImpl implements WalletService {
     @Override
     public synchronized void fixedDeposit(String owner, BigDecimal fdAmount) {
         requirePlayerExists(owner);
-        if (fdAmount.scale() > 4) fdAmount = fdAmount.setScale(4, BigDecimal.ROUND_HALF_UP);
+        if (fdAmount.scale() > 4)
+            fdAmount = fdAmount.setScale(4, BigDecimal.ROUND_HALF_UP);
+
         Wallet w = wallets.get(owner);
+
         if (w.getFixedDeposit() != null) {
             throw new IllegalArgumentException("FD already exists for " + owner);
         }
-        if (w.getBalance().compareTo(fdAmount) < 0) throw new IllegalArgumentException("Insufficient balance to park FD");
+        if (w.getBalance().compareTo(fdAmount) < 0) {
+            throw new IllegalArgumentException("Insufficient balance to park FD");
+        }
+
         w.setFixedDeposit(new FixedDeposit(fdAmount));
-        w.getTransactions().add(new com.fkwallet.model.Transaction(TransactionType.FD_PARK, fdAmount, "FD parked"));
+
+        // FIX: use addTransaction instead of unmodifiableList()
+        w.addTransaction(new Transaction(TransactionType.FD_PARK, fdAmount, "FD parked"));
     }
 
     private void requirePlayerExists(String owner) {
-        if (!wallets.containsKey(owner)) throw new IllegalArgumentException("Unknown wallet " + owner);
+        if (!wallets.containsKey(owner))
+            throw new IllegalArgumentException("Unknown wallet " + owner);
     }
 
     private void requirePositive(BigDecimal v, String name) {
-        if (v == null || v.compareTo(BigDecimal.ZERO) <= 0) throw new IllegalArgumentException(name + " must be > 0");
+        if (v == null || v.compareTo(BigDecimal.ZERO) <= 0)
+            throw new IllegalArgumentException(name + " must be > 0");
     }
 
     private void requirePositiveOrZero(BigDecimal v, String name) {
-        if (v == null || v.compareTo(BigDecimal.ZERO) < 0) throw new IllegalArgumentException(name + " must be >= 0");
+        if (v == null || v.compareTo(BigDecimal.ZERO) < 0)
+            throw new IllegalArgumentException(name + " must be >= 0");
     }
 
     @Override
