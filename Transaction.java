@@ -7,7 +7,7 @@ public class Transaction {
     private final Instant time;
     private final TransactionType type;
     private final BigDecimal amount;
-    private final String note; 
+    private final String note;
 
     public Transaction(TransactionType type, BigDecimal amount, String note) {
         this.time = Instant.now();
@@ -23,7 +23,7 @@ public class Transaction {
 
     @Override
     public String toString() {
-        String t = type == TransactionType.DEBIT ? "debit" : "credit";
-        return String.format("%s %s %s", note, t, amount.stripTrailingZeros().toPlainString());
+        String direction = type == TransactionType.DEBIT ? "debit" : "credit";
+        return String.format("%s %s %s", note, direction, amount.stripTrailingZeros().toPlainString());
     }
 }
